@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Ubi</title>
+
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f5f5f5;color:#222}
+.header{background:#6b21a8;color:white;padding:20px;text-align:center}
+.header h1{margin:0;font-size:28px}
+.header p{margin:6px 0 0}
+.container{padding:16px}
+.card{background:white;border-radius:15px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px #ddd}
+h2{color:#6b21a8;margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.menu{background:white;border:0;border-radius:15px;padding:20px 8px;text-align:center;box-shadow:0 2px 8px #ddd;font-size:16px}
+.menu .icon{font-size:32px}
+.menu button{border:0;background:white;width:100%;font-size:16px}
+.form input{width:100%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px}
+.btn{width:100%;padding:13px;border:0;border-radius:9px;background:#6b21a8;color:white;font-size:16px;margin-top:8px}
+.back{background:#555}
+.product{background:white;border-radius:12px;padding:15px;margin-top:10px;box-shadow:0 2px 6px #ddd}
+.product h3{margin:0 0 6px;color:#6b21a8}
+.product button{padding:8px 12px;border:0;border-radius:7px;margin:4px 3px 0 0}
+.edit{background:#eee}
+.delete{background:#ffdede}
+.search{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin-bottom:10px}
+.hidden{display:none}
+.footer{text-align:center;color:#777;padding:20px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://dbezgktzusqgjzgpmhgy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_roUGyqI2NmawMg1V4h54NA_wH5LtMLa";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
+</head>
+
+<body>
+<div id="loginPage" style="padding:25px;text-align:center;">
+  <h2 style="color:#6b21a8;">ROYAL UBI</h2>
+  <p>Login Owner</p>
+
+  <input
+    id="loginEmail"
+    type="email"
+    placeholder="Email"
+    style="width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px;"
+  >
+
+  <input
+    id="loginPassword"
+    type="password"
+    placeholder="Password"
+    style="width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px;"
+  >
+
+  <button
+    onclick="loginOwner()"
+    style="width:100%;padding:13px;background:#6b21a8;color:white;border:0;border-radius:8px;margin-top:8px;"
+  >
+    Masuk
+  </button>
+<button
+  onclick="lupaPassword()"
+  style="width:100%;padding:10px;margin-top:8px;background:white;color:#6b21a8;border:0;"
+>
+  Lupa Password?
+</button>
+  <p id="loginStatus" style="color:red;margin-top:12px;"></p>
+</div>
+
+<script>
+async function loginOwner(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  if(!email || !password){
+    document.getElementById("loginStatus").innerText =
+      "Email dan password wajib diisi.";
+    return;
+  }
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+  if(error){
+    document.getElementById("loginStatus").innerText =
+      "Login gagal: " + error.message;
+    return;
+  }
+
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  tampilkanDashboard();
+}
+</script>
+<div class="header">
+<h1>ROYAL UBI</h1>
+<p>Aplikasi Manajemen Usaha</p>
+</div>
+
+<div class="container">
+
+<div id="dashboard" style="display:none;">
+<div class="card">
+<h2>Dashboard Owner</h2>
+<p>Selamat datang di aplikasi Royal Ubi.</p>
+<div class="grid" style="margin-top:20px;">
+
+<div class="card">
+<strong>💰 Omzet Hari Ini</strong>
+<h2 id="omzetHariIni">Rp 0</h2>
+</div>
+
+<div class="card">
+<strong>🧾 Transaksi Hari Ini</strong>
+<h2 id="jumlahTransaksiHariIni">0</h2>
+</div>
+
+</div>
+</div>
+
+<div class="grid">
+<div class="menu">
+<button onclick="bukaProduk()">
+<div class="icon">🛒</div>
+<strong>Produk</strong>
+<p>Kelola produk Royal Ubi</p>
+</button>
+</div>
+<div class="menu">
+  <button onclick="bukaStok()">
+    <div class="icon">📦</div>
+    <strong>Stok</strong>
+    <p>Kontrol persediaan</p>
+  </button>
+</div>
+
+<div class="menu">
+<button onclick="bukaPenjualan()">
+<div class="icon">💰</div>
+<strong>Penjualan</strong>
+<p>Catat transaksi</p>
+</button>
+</div>
+
+<div class="menu" onclick="bukaAnggota()">
+<div class="icon">👥</div>
+<strong>Anggota</strong>
+<p>Kelola anggota</p>
+</div>
+
+<div class="menu" onclick="bukaMitra()">
+<div class="icon">🏪</div>
+<strong>Mitra</strong>
+<p>Kelola mitra Royal Ubi</p>
+</div>
+
+<div class="menu">
+<button onclick="bukaLaporan()">
+<div class="icon">📋</div>
+<strong>Laporan</strong>
+<p>Lihat laporan usaha</p>
+</button>
+</div>
+</div>
+</div>
+<div id="mitraPage" class="hidden">
+
+<div class="card">
+
+<h2>🏪 Mitra Royal Ubi</h2>
+
+<div class="form">
+
+<input id="namaMitra" placeholder="Nama mitra">
+
+<input id="teleponMitra" placeholder="Nomor WhatsApp">
+
+<input id="alamatMitra" placeholder="Alamat mitra">
+
+<button class="btn" onclick="simpanMitra()">
++ Simpan Mitra
+</button>
+
+</div>
+</div>
+
+<div id="daftarMitra"></div>
+
+<button class="btn back" onclick="kembaliDariMitra()">
+← Kembali
+</button>
+</div>
+
+</div>
+<div id="produk" class="hidden">
+
+<div class="card">
+<h2>🛒 Produk Royal Ubi</h2>
+
+<div class="form">
+<input id="nama" placeholder="Nama produk">
+<input id="modal" type="number" placeholder="Harga modal">
+<input id="harga" type="number" placeholder="Harga jual">
+<input id="stok" type="number" placeholder="Jumlah stok">
+
+<button class="btn" onclick="simpanProduk()">＋ Simpan Produk</button>
+<button class="btn back" onclick="kembali()">← Kembali</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Daftar Produk</h2>
+
+<input class="search" id="cari" placeholder="🔎 Cari produk..." oninput="tampilkanProduk()">
+
+<div id="daftar"></div>
+</div>
+
+</div>
+
+</div>
+
+<div class="footer">
+Royal Ubi © 2026
+</div>
+<div id="anggotaPage" class="hidden">
+
+<div class="card">
+
+<h2>👥 Anggota Royal Ubi</h2>
+
+<div class="form">
+
+<input id="namaAnggota" placeholder="Nama anggota">
+
+<input id="teleponAnggota" placeholder="Nomor WhatsApp">
+
+<button class="btn" onclick="simpanAnggota()">
++ Simpan Anggota
+</button>
+
+</div>
+
+<div id="daftarAnggota"></div>
+
+<button class="btn back" onclick="kembaliDariAnggota()">
+← Kembali
+</button>
+
+</div>
+
+</div>
+<div id="stokPage" class="hidden">
+
+<div class="card">
+<h2>📦 Stok Royal Ubi</h2>
+
+<div id="daftarStok"></div>
+
+<button class="btn back" onclick="kembaliDariStok()">
+← Kembali
+</button>
+</div>
+</div>
+<div id="penjualanPage" class="hidden">
+
+<div class="card">
+
+<h2>💰 Penjualan Royal Ubi</h2>
+
+<label>Produk</label>
+
+<select id="produkJual">
+<option value="">-- Pilih Produk --</option>
+</select>
+
+<label>Jumlah</label>
+
+<input
+id="jumlahJual"
+type="number"
+min="1"
+value="1"
+placeholder="Jumlah terjual">
+
+<button class="btn" onclick="simpanPenjualan()">
+💰 Simpan Penjualan
+</button>
+
+<button class="btn back" onclick="kembaliDariPenjualan()">
+← Kembali
+</button>
+<div class="card" style="margin-top:20px;">
+  <h2>📋 Riwayat Penjualan</h2>
+  <div id="riwayatPenjualan">
+    Memuat riwayat...
+  </div>
+</div>
+</div>
+</div>
+<div id="laporanPage" class="hidden">
+
+  <div class="card">
+
+    <h2>📊 Laporan Royal Ubi</h2>
+
+    <div id="isiLaporan">
+      Memuat laporan...
+    </div>
+
+    <button class="btn back" onclick="kembaliDariLaporan()">
+      ← Kembali
+    </button>
+
+  </div>
+
+</div>
+<script>
+let produk = JSON.parse(localStorage.getItem("royalUbiProduk")) || [];
+let editIndex = -1;
+function bukaLaporan(){
+
+document.getElementById("dashboard").classList.add("hidden");
+document.getElementById("produk").classList.add("hidden");
+document.getElementById("stokPage").classList.add("hidden");
+document.getElementById("penjualanPage").classList.add("hidden");
+document.getElementById("anggotaPage").classList.add("hidden"); // 🔴 TAMBAHKAN
+document.getElementById("mitraPage").classList.add("hidden");   // 🔴 TAMBAHKAN
+
+document.getElementById("laporanPage").classList.remove("hidden");
+
+tampilkanLaporan();
+}
+function kembaliDariLaporan(){
+    document.getElementById("laporanPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+}
+async function tampilkanLaporan(){
+
+const tempat = document.getElementById("isiLaporan");
+
+if(!tempat) return;
+
+tempat.innerHTML = "Memuat laporan...";
+
+const { data, error } = await supabaseClient
+.from("penjualan")
+.select("nama_produk, jumlah, harga, total, created_at")
+.order("created_at", { ascending: false });
+
+if(error){
+
+tempat.innerHTML =
+`<p style="color:red;">
+Gagal memuat laporan: ${error.message}
+</p>`;
+
+return;
+
+}
+
+if(!data || data.length === 0){
+
+tempat.innerHTML = "<p>Belum ada data penjualan.</p>";
+
+return;
+
+}
+
+let omzet = 0;
+let jumlahBarang = 0;
+
+data.forEach(t => {
+
+omzet += Number(t.total) || 0;
+jumlahBarang += Number(t.jumlah) || 0;
+
+});
+
+tempat.innerHTML = `
+
+<div class="card">
+
+<h3>💰 Total Omzet</h3>
+
+<h2>
+Rp ${omzet.toLocaleString("id-ID")}
+</h2>
+
+</div>
+
+<div class="card">
+
+<h3>🧾 Total Transaksi</h3>
+
+<h2>
+${data.length}
+</h2>
+
+</div>
+
+<div class="card">
+
+<h3>📦 Total Barang Terjual</h3>
+
+<h2>
+${jumlahBarang}
+</h2>
+
+</div>
+
+<div class="card">
+
+<h3>📋 Detail Penjualan</h3>
+
+${data.map(t => `
+
+<div style="padding:12px 0;border-bottom:1px solid #ddd;">
+
+<strong>${t.nama_produk || "-"}</strong><br>
+
+Terjual: ${t.jumlah || 0}<br>
+
+Harga: Rp ${(Number(t.harga) || 0).toLocaleString("id-ID")}<br>
+
+Total:
+<strong>
+Rp ${(Number(t.total) || 0).toLocaleString("id-ID")}
+</strong>
+
+</div>
+
+`).join("")}
+
+</div>
+
+`;
+
+}
+
+function bukaProduk(){
+document.getElementById("dashboard").classList.add("hidden");
+document.getElementById("produk").classList.remove("hidden");
+tampilkanProduk();
+}
+function bukaStok(){
+
+document.getElementById("dashboard").classList.add("hidden");
+document.getElementById("produk").classList.add("hidden");
+document.getElementById("stokPage").classList.remove("hidden");
+
+tampilkanStok();
+
+}
+function bukaAnggota(){
+document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("produk").classList.add("hidden");
+    document.getElementById("stokPage").classList.add("hidden");
+    document.getElementById("penjualanPage").classList.add("hidden");
+    document.getElementById("laporanPage").classList.add("hidden");
+
+    document.getElementById("anggotaPage").classList.remove("hidden");
+tampilkanAnggota();
+}
+function bukaMitra(){
+
+document.getElementById("loginPage").classList.add("hidden");
+
+document.getElementById("dashboard").classList.add("hidden");
+document.getElementById("produk").classList.add("hidden");
+document.getElementById("stokPage").classList.add("hidden");
+document.getElementById("penjualanPage").classList.add("hidden");
+document.getElementById("laporanPage").classList.add("hidden");
+document.getElementById("anggotaPage").classList.add("hidden");
+
+document.getElementById("mitraPage").classList.remove("hidden");
+
+tampilkanMitra();
+
+}
+async function simpanAnggota(){
+
+  const nama = document.getElementById("namaAnggota").value.trim();
+  const telepon = document.getElementById("teleponAnggota").value.trim();
+
+  if(!nama){
+    alert("Nama anggota wajib diisi!");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("anggota")
+    .insert([
+      {
+        nama: nama,
+        telepon: telepon
+      }
+    ]);
+
+  if(error){
+    console.log("Gagal menyimpan anggota:", error);
+    alert("Gagal menyimpan anggota: " + error.message);
+    return;
+  }
+
+  document.getElementById("namaAnggota").value = "";
+  document.getElementById("teleponAnggota").value = "";
+
+  await tampilkanAnggota();
+
+  alert("Anggota berhasil disimpan!");
+}
+async function tampilkanAnggota(){
+
+  const tempat = document.getElementById("daftarAnggota");
+
+  if(!tempat) return;
+
+  const { data: anggota, error } = await supabaseClient
+  .from("anggota")
+  .select("*")
+  .order("id", { ascending: false });
+
+if (error) {
+  console.log("Gagal mengambil anggota:", error);
+  tempat.innerHTML = "<p>Gagal memuat anggota.</p>";
+  return;
+}
+
+  tempat.innerHTML = anggota.map((a, i) => `
+  <div style="padding:12px 0;border-bottom:1px solid #ddd;">
+    <strong>${a.nama}</strong><br>
+    WhatsApp: ${a.telepon || "-"}<br><br>
+
+    <button class="btn" onclick="editAnggota(${i})">
+      ✏️ Edit
+    </button>
+
+    <button class="btn" onclick="hapusAnggota(${i})">
+      🗑️ Hapus
+    </button>
+  </div>
+`).join("");
+}
+async function editAnggota(i) {
+  
+  const tempat = document.getElementById("daftarAnggota");
+  
+  const { data: anggota, error } = await supabaseClient
+    .from("anggota")
+    .select("*")
+    .order("id", { ascending: false });
+  
+  if (error) {
+    console.log("Gagal mengambil anggota:", error);
+    alert("Gagal mengambil data anggota.");
+    return;
+  }
+  
+  if (!anggota || !anggota[i]) {
+    alert("Data anggota tidak ditemukan.");
+    return;
+  }
+  
+  const namaBaru = prompt(
+    "Nama anggota:",
+    anggota[i].nama
+  );
+  
+  if (namaBaru === null) return;
+  
+  const teleponBaru = prompt(
+    "Nomor WhatsApp:",
+    anggota[i].telepon || ""
+  );
+  
+  if (teleponBaru === null) return;
+  
+  const { error: updateError } = await supabaseClient
+    .from("anggota")
+    .update({
+      nama: namaBaru.trim(),
+      telepon: teleponBaru.trim()
+    })
+    .eq("id", anggota[i].id);
+  
+  if (updateError) {
+    console.log("Gagal mengubah anggota:", updateError);
+    alert("Gagal mengubah anggota.");
+    return;
+  }
+  
+  tampilkanAnggota();
+  
+  alert("Anggota berhasil diubah!");
+}
+async function hapusAnggota(i) {
+  
+  const { data: anggota, error } = await supabaseClient
+    .from("anggota")
+    .select("*")
+    .order("id", { ascending: false });
+  
+  if (error) {
+    console.log("Gagal mengambil anggota:", error);
+    alert("Gagal mengambil data anggota.");
+    return;
+  }
+  
+  if (!confirm("Hapus anggota ini?")) return;
+  
+  const { error: deleteError } = await supabaseClient
+    .from("anggota")
+    .delete()
+    .eq("id", anggota[i].id);
+  
+  if (deleteError) {
+    console.log("Gagal menghapus anggota:", deleteError);
+    alert("Gagal menghapus anggota.");
+    return;
+  }
+  
+  tampilkanAnggota();
+  
+  alert("Anggota berhasil dihapus!");
+}
+function kembaliDariAnggota(){
+
+  document.getElementById("anggotaPage")
+    .classList.add("hidden");
+
+  document.getElementById("dashboard")
+    .classList.remove("hidden");
+}
+async function simpanMitra(){
+
+  const nama = document.getElementById("namaMitra").value.trim();
+  const telepon = document.getElementById("teleponMitra").value.trim();
+  const alamat = document.getElementById("alamatMitra").value.trim();
+
+  if(!nama){
+    alert("Nama mitra wajib diisi!");
+    return;
+  }
+
+  const { error } = await supabaseClient
+  .from("mitra")
+  .insert({
+    nama: nama,
+    telepon: telepon,
+    alamat: alamat
+  });
+
+if (error) {
+  console.log("Gagal menyimpan mitra:", error);
+  alert("Gagal menyimpan mitra.");
+  return;
+}
+
+  document.getElementById("namaMitra").value = "";
+  document.getElementById("teleponMitra").value = "";
+  document.getElementById("alamatMitra").value = "";
+
+  tampilkanMitra();
+
+  alert("Mitra berhasil disimpan!");
+}
+
+
+async function tampilkanMitra() {
+  
+  const tempat = document.getElementById("daftarMitra");
+  
+  if (!tempat) return;
+  
+  const { data, error } = await supabaseClient
+    .from("mitra")
+    .select("*")
+    .order("created_at", { ascending: false });
+  
+  if (error) {
+    
+    console.log("Gagal mengambil data mitra:", error);
+    
+    tempat.innerHTML = "<p>Gagal mengambil data mitra.</p>";
+    
+    return;
+  }
+  
+  if (!data || data.length === 0) {
+    
+    tempat.innerHTML = "<p>Belum ada mitra.</p>";
+    
+    return;
+  }
+  
+  tempat.innerHTML = data.map(m => `
+  <div style="padding:12px 0;border-bottom:1px solid #ddd;">
+
+    <strong>${m.nama}</strong><br>
+
+    WhatsApp: ${m.telepon || "-"}<br>
+
+    Alamat: ${m.alamat || "-"}<br><br>
+
+    <button class="btn" onclick="editMitra('${m.id}')">
+      ✏️ Edit
+    </button>
+
+    <button class="btn" onclick="hapusMitra('${m.id}')">
+      🗑️ Hapus
+    </button>
+
+  </div>
+`).join("");
+}
+async function editMitra(id) {
+  
+  const { data, error } = await supabaseClient
+    .from("mitra")
+    .select("*")
+    .eq("id", id)
+    .single();
+  
+  if (error) {
+    console.log("Gagal mengambil mitra:", error);
+    alert("Gagal mengambil data mitra.");
+    return;
+  }
+  
+  const namaBaru = prompt("Nama mitra:", data.nama);
+  if (namaBaru === null) return;
+  
+  const teleponBaru = prompt(
+    "Nomor WhatsApp:",
+    data.telepon || ""
+  );
+  if (teleponBaru === null) return;
+  
+  const alamatBaru = prompt(
+    "Alamat mitra:",
+    data.alamat || ""
+  );
+  if (alamatBaru === null) return;
+  
+  const { error: updateError } = await supabaseClient
+    .from("mitra")
+    .update({
+      nama: namaBaru.trim(),
+      telepon: teleponBaru.trim(),
+      alamat: alamatBaru.trim()
+    })
+    .eq("id", id);
+  
+  if (updateError) {
+    console.log("Gagal mengedit mitra:", updateError);
+    alert("Gagal mengedit mitra.");
+    return;
+  }
+  
+  alert("Mitra berhasil diedit!");
+  
+  tampilkanMitra();
+}
+
+
+async function hapusMitra(id) {
+  
+  if (!confirm("Hapus mitra ini?")) {
+    return;
+  }
+  
+  const { error } = await supabaseClient
+    .from("mitra")
+    .delete()
+    .eq("id", id);
+  
+  if (error) {
+    console.log("Gagal menghapus mitra:", error);
+    alert("Gagal menghapus mitra.");
+    return;
+  }
+  
+  alert("Mitra berhasil dihapus!");
+  
+  tampilkanMitra();
+}
+function kembaliDariMitra(){
+
+  document.getElementById("mitraPage")
+    .classList.add("hidden");
+
+  document.getElementById("dashboard")
+    .classList.remove("hidden");
+
+}
+async function tampilkanRiwayatPenjualan(){
+
+  const tempat = document.getElementById("riwayatPenjualan");
+
+  if(!tempat) return;
+
+  tempat.innerHTML = "Memuat riwayat...";
+
+  let { data, error } = await supabaseClient
+    .from("penjualan")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if(error){
+    tempat.innerHTML =
+      `<p style="color:red;">
+        Gagal memuat riwayat: ${error.message}
+      </p>`;
+    return;
+  }
+
+  if(!data || data.length === 0){
+    tempat.innerHTML = "<p>Belum ada transaksi.</p>";
+    return;
+  }
+
+  tempat.innerHTML = data.map(t => `
+    <div style="padding:12px 0;border-bottom:1px solid #ddd;">
+      <strong>${t.nama_produk || "-"}</strong><br>
+      Terjual: ${t.jumlah || 0}<br>
+      Harga: Rp ${(Number(t.harga) || 0).toLocaleString("id-ID")}<br>
+      Total:
+      <strong>
+        Rp ${(Number(t.total) || 0).toLocaleString("id-ID")}
+      </strong>
+    </div>
+  `).join("");
+}
+function kembaliDariPenjualan() {
+  
+  document.getElementById("penjualanPage").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+  tampilkanDashboard();
+}
+
+async function tampilkanDashboard() {
+  
+  const omzet = document.getElementById("omzetHariIni");
+  const jumlah = document.getElementById("jumlahTransaksiHariIni");
+  
+  if (!omzet || !jumlah) return;
+  
+  const sekarang = new Date();
+  
+  const awalHari = new Date(
+    sekarang.getFullYear(),
+    sekarang.getMonth(),
+    sekarang.getDate()
+  );
+  
+  const besok = new Date(
+    sekarang.getFullYear(),
+    sekarang.getMonth(),
+    sekarang.getDate() + 1
+  );
+  
+  const { data, error } = await supabaseClient
+    .from("penjualan")
+    .select("total, created_at")
+    .gte("created_at", awalHari.toISOString())
+    .lt("created_at", besok.toISOString());
+  
+  if (error) {
+    console.log("Gagal mengambil data dashboard:", error);
+    return;
+  }
+  
+  let totalOmzet = 0;
+  let totalTransaksi = 0;
+  
+  if (data) {
+    totalTransaksi = data.length;
+    
+    data.forEach(t => {
+      totalOmzet += Number(t.total) || 0;
+    });
+  }
+  
+  omzet.textContent =
+    "Rp " + totalOmzet.toLocaleString("id-ID");
+  
+  jumlah.textContent = totalTransaksi;
+}
+
+function bukaPenjualan() {
+  
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("produk").classList.add("hidden");
+  document.getElementById("stokPage").classList.add("hidden");
+  document.getElementById("penjualanPage").classList.remove("hidden");
+  
+  isiPilihanProduk();
+  tampilkanRiwayatPenjualan();
+  
+}
+
+function isiPilihanProduk(){
+
+let pilihan = document.getElementById("produkJual");
+
+pilihan.innerHTML = `
+<option value="">-- Pilih Produk --</option>
+`;
+
+produk.forEach((p,i)=>{
+
+pilihan.innerHTML += `
+<option value="${i}">
+${p.nama} - Stok ${p.stok}
+</option>
+`;
+
+});
+
+}
+async function simpanPenjualan(){
+
+let index = Number(document.getElementById("produkJual").value);
+let jumlah = Number(document.getElementById("jumlahJual").value);
+
+if(isNaN(index)){
+alert("Silakan pilih produk.");
+return;
+}
+
+if(jumlah < 1){
+alert("Jumlah penjualan minimal 1.");
+return;
+}
+
+let p = produk[index];
+
+if(!p){
+alert("Produk tidak ditemukan.");
+return;
+}
+
+let stokSekarang = Number(p.stok);
+
+if(jumlah > stokSekarang){
+alert("Stok tidak cukup. Stok tersedia: " + stokSekarang);
+return;
+}
+
+if(!p.id){
+alert("Produk belum memiliki ID Supabase.");
+return;
+}
+
+let harga = Number(p.harga);
+let total = harga * jumlah;
+let stokBaru = stokSekarang - jumlah;
+
+const { data: transaksi, error: errorPenjualan } =
+await supabaseClient
+.from("penjualan")
+.insert([
+{
+produk_id: p.id,
+nama_produk: p.nama,
+jumlah: jumlah,
+harga: harga,
+total: total
+}
+])
+.select();
+
+if(errorPenjualan){
+alert("Gagal menyimpan transaksi: " + errorPenjualan.message);
+return;
+}
+
+const { error: errorStok } =
+await supabaseClient
+.from("produk")
+.update({
+stok: stokBaru
+})
+.eq("id", p.id);
+
+if(errorStok){
+
+if(transaksi && transaksi[0]){
+await supabaseClient
+.from("penjualan")
+.delete()
+.eq("id", transaksi[0].id);
+}
+
+alert("Gagal mengurangi stok: " + errorStok.message);
+return;
+}
+
+produk[index].stok = stokBaru;
+
+alert(
+"Penjualan berhasil disimpan!\n\n" +
+p.nama + "\n" +
+"Terjual: " + jumlah + "\n" +
+"Total: Rp " + total.toLocaleString("id-ID") + "\n" +
+"Sisa stok: " + stokBaru
+);
+
+document.getElementById("jumlahJual").value = 1;
+
+isiPilihanProduk();
+
+tampilkanRiwayatPenjualan();
+
+}
+function kembaliDariStok(){
+
+document.getElementById("stokPage").classList.add("hidden");
+document.getElementById("dashboard").classList.remove("hidden");
+
+}
+
+function tampilkanStok(){
+
+let daftar = document.getElementById("daftarStok");
+
+daftar.innerHTML = "";
+
+if(produk.length === 0){
+
+daftar.innerHTML = "<p>Belum ada produk.</p>";
+
+return;
+
+}
+
+produk.forEach((p,i)=>{
+
+let status = "";
+
+if(p.stok <= 0){
+
+status = '<span style="color:red;font-weight:bold">HABIS</span>';
+
+}else if(p.stok <= 10){
+
+status = '<span style="color:#d97706;font-weight:bold">MENIPIS</span>';
+
+}else{
+
+status = '<span style="color:green;font-weight:bold">AMAN</span>';
+
+}
+
+daftar.innerHTML += `
+
+<div class="product">
+
+<h3>${p.nama}</h3>
+
+<div>
+Harga jual:
+<strong>Rp ${Number(p.harga).toLocaleString("id-ID")}</strong>
+</div>
+
+<div>
+Jumlah stok:
+<strong>${p.stok}</strong>
+</div>
+
+<div>
+Status: ${status}
+</div>
+
+<div style="display:flex;gap:10px;margin-top:12px;">
+
+<button class="btn"
+onclick="ubahStok(${i},-1)"
+style="flex:1;">
+− 1
+</button>
+
+<button class="btn"
+onclick="ubahStok(${i},1)"
+style="flex:1;">
+＋ 1
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+
+async function ubahStok(i, jumlah){
+
+let p = produk[i];
+
+let stokBaru = Number(p.stok) + jumlah;
+
+if(stokBaru < 0){
+
+alert("Stok tidak boleh kurang dari 0.");
+
+return;
+
+}
+
+if(!p.id){
+
+alert("Produk ini belum memiliki ID Supabase.");
+
+return;
+
+}
+
+const { error } = await supabaseClient
+  .from("produk")
+  .update({
+    stok: stokBaru
+  })
+  .eq("id", p.id);
+
+if(error){
+
+alert("Gagal mengubah stok: " + error.message);
+
+return;
+
+}
+
+produk[i].stok = stokBaru;
+
+tampilkanStok();
+
+}
+
+function kembali(){
+document.getElementById("produk").classList.add("hidden");
+document.getElementById("dashboard").classList.remove("hidden");
+}
+
+async function simpanProduk(){
+
+  let nama = document.getElementById("nama").value.trim();
+  let modal = Number(document.getElementById("modal").value);
+  let harga = Number(document.getElementById("harga").value);
+  let stok = Number(document.getElementById("stok").value);
+
+  if(!nama){
+    alert("Nama produk belum diisi");
+    return;
+  }
+
+  if(editIndex === -1){
+
+    const { data, error } = await supabaseClient
+      .from("produk")
+      .insert([
+        {
+          nama: nama,
+          modal: modal,
+          harga: harga,
+          stok: stok
+        }
+      ])
+      .select();
+
+    if(error){
+      alert("Gagal menyimpan produk: " + error.message);
+      return;
+    }
+
+    alert("Produk berhasil disimpan ke Supabase");
+
+  }else{
+
+    let id = produk[editIndex].id;
+
+    if(!id){
+      alert("Produk lama belum memiliki ID Supabase. Nanti kita sinkronkan terlebih dahulu.");
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("produk")
+      .update({
+        nama: nama,
+        modal: modal,
+        harga: harga,
+        stok: stok
+      })
+      .eq("id", id);
+
+    if(error){
+      alert("Gagal mengubah produk: " + error.message);
+      return;
+    }
+
+    alert("Produk berhasil diperbarui");
+    editIndex = -1;
+  }
+
+  document.getElementById("nama").value = "";
+  document.getElementById("modal").value = "";
+  document.getElementById("harga").value = "";
+  document.getElementById("stok").value = "";
+
+  await ambilProdukDariSupabase();
+}
+function tampilkanProduk(){
+let daftar=document.getElementById("daftar");
+let cari=document.getElementById("cari").value.toLowerCase();
+
+daftar.innerHTML="";
+
+produk.forEach((p,i)=>{
+if(!p.nama.toLowerCase().includes(cari)) return;
+
+daftar.innerHTML+=`
+<div class="product">
+<h3>${p.nama}</h3>
+<div>Modal: Rp ${p.modal.toLocaleString("id-ID")}</div>
+<div>Harga jual: Rp ${p.harga.toLocaleString("id-ID")}</div>
+<div>Stok: <strong>${p.stok}</strong></div>
+<button class="edit" onclick="editProduk(${i})">✏️ Edit</button>
+<button class="delete" onclick="hapusProduk(${i})">🗑️ Hapus</button>
+</div>`;
+});
+}
+
+function editProduk(i){
+let p=produk[i];
+
+document.getElementById("nama").value=p.nama;
+document.getElementById("modal").value=p.modal;
+document.getElementById("harga").value=p.harga;
+document.getElementById("stok").value=p.stok;
+
+editIndex=i;
+window.scrollTo(0,0);
+}
+
+async function hapusProduk(i){
+
+let p = produk[i];
+
+if(!p){
+alert("Produk tidak ditemukan.");
+return;
+}
+
+if(!p.id){
+alert("Produk ini belum memiliki ID Supabase.");
+return;
+}
+
+if(confirm("Hapus produk " + p.nama + "?")){
+
+const { error } = await supabaseClient
+.from("produk")
+.delete()
+.eq("id", p.id);
+
+if(error){
+alert("Gagal menghapus produk: " + error.message);
+return;
+}
+
+produk.splice(i,1);
+
+localStorage.setItem(
+"royalUbiProduk",
+JSON.stringify(produk)
+);
+
+tampilkanProduk();
+tampilkanStok();
+
+alert("Produk berhasil dihapus.");
+}
+}
+async function ambilProdukDariSupabase(){
+
+const { data, error } = await supabaseClient
+.from("produk")
+.select("*")
+.order("id", { ascending: true });
+
+if(error){
+alert("Gagal mengambil produk: " + error.message);
+return;
+}
+
+produk = data || [];
+
+tampilkanProduk();
+tampilkanStok();
+
+}
+ambilProdukDariSupabase();
+</script>
+
+</body>
+</html>
