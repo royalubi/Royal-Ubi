@@ -1,0 +1,13 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Royal Ubi",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Royal Ubi",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "description": "Aplikasi Manajemen Usaha Royal Ubi",
+  "id": "royal-ubi"
+}
