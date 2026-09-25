@@ -4,9 +4,9 @@
   "display": "standalone",
   "name": "Royal Ubi",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/Royal-Ubi/",
   "short_name": "Royal Ubi",
-  "start_url": "/",
+  "start_url":"/Royal-Ubi/",
   "theme_color": "#ffffff",
   "description": "Aplikasi Manajemen Usaha Royal Ubi",
   "id": "royal-ubi"
