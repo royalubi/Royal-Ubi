@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#7b3f00"><title>Royal Ubi V3</title>
+<style>
+body{margin:0;font-family:system-ui;background:#f5f6f8;color:#242424}.box{max-width:520px;margin:40px auto;background:white;padding:22px;border-radius:18px}.btn{padding:11px 15px;border:0;border-radius:10px;font-weight:700;background:#7b3f00;color:#fff}.field{margin:10px 0}.field input{width:100%;padding:11px;box-sizing:border-box;border:1px solid #ddd;border-radius:10px}.muted{color:#777;font-size:13px}.error{color:#b42318}.ok{color:#087443}.hidden{display:none}header{background:#7b3f00;color:white;padding:18px}.container{max-width:1050px;margin:auto;padding:15px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card{background:#fff;border-radius:14px;padding:15px}.product{background:#fff;padding:13px;border-radius:12px}.products{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}@media(max-width:700px){.grid,.products{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="setup" class="box">
+<h2>🍠 Royal Ubi V3</h2>
+<p class="muted">Tahap 3 — Database Online</p>
+<div class="field"><label>Supabase URL</label><input id="url" placeholder="https://xxxx.supabase.co"></div>
+<div class="field"><label>Supabase Anon Key</label><input id="key" placeholder="eyJ..."></div>
+<button class="btn" onclick="saveConfig()">Simpan & Mulai</button>
+<p id="msg" class="muted"></p>
+</div>
+<div id="login" class="box hidden">
+<h2>Login Royal Ubi</h2>
+<div class="field"><input id="email" placeholder="Email akun"></div>
+<div class="field"><input id="pass" type="password" placeholder="Password"></div>
+<button class="btn" onclick="doLogin()">Masuk</button>
+<p id="loginMsg" class="muted"></p>
+</div>
+<div id="app" class="hidden">
+<header><div class="container"><b>🍠 ROYAL UBI</b><button style="float:right" class="btn" onclick="logout()">Keluar</button><div id="who" class="muted"></div></div></header>
+<main class="container">
+<h2>Dashboard</h2>
+<div class="grid">
+<div class="card"><div class="muted">Produk</div><h2 id="productCount">0</h2></div>
+<div class="card"><div class="muted">Transaksi</div><h2 id="txCount">0</h2></div>
+<div class="card"><div class="muted">Omzet</div><h2 id="sales">Rp0</h2></div>
+</div>
+<h3>Produk</h3><div id="products" class="products"></div>
+</main>
+</div>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+let sb=null,user=null,profile=null;
+const cfg=JSON.parse(localStorage.getItem('royalUbiSupabase')||'null');
+if(cfg){document.getElementById('setup').classList.add('hidden');init(cfg)}
+function saveConfig(){const url=document.getElementById('url').value.trim(),key=document.getElementById('key').value.trim();if(!url||!key){document.getElementById('msg').textContent='Isi URL dan Anon Key terlebih dahulu.';return}localStorage.setItem('royalUbiSupabase',JSON.stringify({url,key}));location.reload()}
+async function init(c){sb=createClient(c.url,c.key);const {data}=await sb.auth.getSession();if(data.session){user=data.session.user;await load()}else document.getElementById('login').classList.remove('hidden')}
+window.doLogin=async()=>{const email=document.getElementById('email').value,pass=document.getElementById('pass').value;const {data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){document.getElementById('loginMsg').textContent=error.message;return}user=data.user;await load()}
+window.logout=async()=>{await sb.auth.signOut();location.reload()}
+async function load(){const {data:p,error}=await sb.from('profiles').select('*').eq('id',user.id).single();if(error){alert('Akun login ada, tetapi profile belum dibuat di database. Buat profile untuk user ini di tabel profiles.');return}profile=p;document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('who').textContent=p.name+' • '+p.role;await refresh();sb.channel('royal-ubi-live').on('postgres_changes',{event:'*',schema:'public',table:'products'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'transactions'},refresh).subscribe()}
+async function refresh(){const {data:products}=await sb.from('products').select('*').eq('active',true).order('name');const {data:tx}=await sb.from('transactions').select('total,status');const completed=(tx||[]).filter(x=>x.status==='completed');document.getElementById('productCount').textContent=(products||[]).length;document.getElementById('txCount').textContent=completed.length;document.getElementById('sales').textContent=rupiah(completed.reduce((a,b)=>a+b.total,0));document.getElementById('products').innerHTML=(products||[]).map(p=>`<div class="product"><b>${p.name}</b><div>${rupiah(p.price)}</div><div class="muted">Stok ${p.stock}</div>${p.stock<=p.min_stock?'<div style="color:#b42318">Stok menipis</div>':''}${profile.role==='owner'?`<button class="btn" style="margin-top:8px" onclick="sell('${p.id}')">Demo Jual 1</button>`:''}</div>`).join('')}
+window.sell=async(id)=>{const p=(await sb.from('products').select('*').eq('id',id).single()).data;if(!p||p.stock<1)return alert('Stok habis');const {data:t,error}=await sb.from('transactions').insert({cashier_id:user.id,total:p.price,payment_method:'cash',status:'completed'}).select().single();if(error)return alert(error.message);await sb.from('transaction_items').insert({transaction_id:t.id,product_id:p.id,qty:1,price:p.price,subtotal:p.price});await sb.from('products').update({stock:p.stock-1}).eq('id',p.id);await sb.from('activity_logs').insert({user_id:user.id,action:'sale',detail:p.name+' x1'});await refresh()}
+function rupiah(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
+</script>
+</body></html>
