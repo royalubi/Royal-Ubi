@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<link rel="manifest" href="/Royal-Ubi/manifest.json">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Royal Ubi</title>
@@ -97,9 +96,76 @@ async function loginOwner(){
     return;
   }
 
-  document.getElementById("loginPage").style.display = "none";
-  document.getElementById("dashboard").style.display = "block";
+const { data: profil, error: profilError } = await supabaseClient
+  .from("user_profiles")
+  .select("role, aktif")
+  .eq("id", data.user.id)
+  .single();
+
+if(profilError || !profil){
+  document.getElementById("loginStatus").innerText =
+    "ERROR: " + (profilError?.message || "Profil tidak ditemukan");
+  return;
+}
+
+if(profil.aktif === false){
+  document.getElementById("loginStatus").innerText =
+    "Akun tidak aktif";
+  return;
+}
+
+localStorage.setItem("userRole", profil.role);
+if(profil.role === "anggota"){
+  aturTampilanPenjaga();
+}
+
+function aturTampilanPenjaga(){
+
+// Tampilkan area agar menu Penjualan tetap bisa digunakan
+const dashboard = document.getElementById("dashboard");
+
+if(dashboard){
+  dashboard.style.display = "block";
+
+  // Sembunyikan isi Dashboard Owner
+  dashboard.querySelectorAll(".card").forEach(card => {
+    card.style.display = "none";
+  });
+}
+// Sembunyikan menu yang bukan untuk Penjaga
+document.querySelectorAll(".menu").forEach(menu => {
+
+  const tombol = menu.querySelector("button");
+
+  const aksiTombol = tombol
+    ? tombol.getAttribute("onclick") || ""
+    : "";
+
+  const aksiMenu = menu.getAttribute("onclick") || "";
+
+  const aksi = aksiTombol + " " + aksiMenu;
+
+  if(
+    aksi.includes("bukaProduk") ||
+    aksi.includes("bukaStok") ||
+    aksi.includes("bukaAnggota") ||
+    aksi.includes("bukaMitra") ||
+    aksi.includes("bukaLaporan")
+  ){
+    menu.style.display = "none";
+  }
+
+});
+}
+  document.getElementById("loginPage")
+  .style.display = "none";
+
+if(profil.role === "owner"){
+  document.getElementById("dashboard")
+    .style.display = "block";
+
   tampilkanDashboard();
+}
 }
 </script>
 <div class="header">
@@ -912,118 +978,99 @@ function bukaPenjualan() {
   
 }
 
-function isiPilihanProduk(){
+async function isiPilihanProduk(){
 
-let pilihan = document.getElementById("produkJual");
+  let pilihan = document.getElementById("produkJual");
 
-pilihan.innerHTML = `
-<option value="">-- Pilih Produk --</option>
-`;
+  pilihan.innerHTML = `
+    <option value="">-- Memuat produk --</option>
+  `;
 
-produk.forEach((p,i)=>{
+  const { data, error } = await supabaseClient
+    .rpc("daftar_produk_penjaga");
 
-pilihan.innerHTML += `
-<option value="${i}">
-${p.nama} - Stok ${p.stok}
-</option>
-`;
+  if(error){
+    pilihan.innerHTML = `
+      <option value="">Gagal memuat produk</option>
+    `;
 
-});
+    console.error("Gagal mengambil produk:", error);
+    return;
+  }
 
+  pilihan.innerHTML = `
+    <option value="">-- Pilih Produk --</option>
+  `;
+
+  if(!data || data.length === 0){
+    pilihan.innerHTML = `
+      <option value="">Belum ada produk</option>
+    `;
+    return;
+  }
+
+  data.forEach((p)=>{
+
+    pilihan.innerHTML += `
+      <option value="${p.id}">
+        ${p.nama}
+      </option>
+    `;
+
+  });
 }
+
 async function simpanPenjualan(){
 
-let index = Number(document.getElementById("produkJual").value);
-let jumlah = Number(document.getElementById("jumlahJual").value);
+  const produkId =
+    Number(document.getElementById("produkJual").value);
 
-if(isNaN(index)){
-alert("Silakan pilih produk.");
-return;
-}
+  const jumlah =
+    Number(document.getElementById("jumlahJual").value);
 
-if(jumlah < 1){
-alert("Jumlah penjualan minimal 1.");
-return;
-}
+  if(!produkId){
+    alert("Silakan pilih produk.");
+    return;
+  }
 
-let p = produk[index];
+  if(jumlah < 1){
+    alert("Jumlah penjualan minimal 1.");
+    return;
+  }
 
-if(!p){
-alert("Produk tidak ditemukan.");
-return;
-}
+  const { data, error } =
+    await supabaseClient.rpc(
+      "simpan_penjualan_penjaga",
+      {
+        p_produk_id: produkId,
+        p_jumlah: jumlah
+      }
+    );
 
-let stokSekarang = Number(p.stok);
+  if(error){
+    alert("Gagal menyimpan penjualan: " + error.message);
+    return;
+  }
 
-if(jumlah > stokSekarang){
-alert("Stok tidak cukup. Stok tersedia: " + stokSekarang);
-return;
-}
+  if(!data || data.success !== true){
+    alert("Penjualan gagal disimpan.");
+    return;
+  }
 
-if(!p.id){
-alert("Produk belum memiliki ID Supabase.");
-return;
-}
+  const total =
+    Number(data.total) || 0;
 
-let harga = Number(p.harga);
-let total = harga * jumlah;
-let stokBaru = stokSekarang - jumlah;
+  alert(
+    "Penjualan berhasil disimpan!\n\n" +
+    data.nama + "\n" +
+    "Terjual: " + jumlah + "\n" +
+    "Total: Rp " +
+    total.toLocaleString("id-ID")
+  );
 
-const { data: transaksi, error: errorPenjualan } =
-await supabaseClient
-.from("penjualan")
-.insert([
-{
-produk_id: p.id,
-nama_produk: p.nama,
-jumlah: jumlah,
-harga: harga,
-total: total
-}
-])
-.select();
+  document.getElementById("jumlahJual").value = 1;
 
-if(errorPenjualan){
-alert("Gagal menyimpan transaksi: " + errorPenjualan.message);
-return;
-}
-
-const { error: errorStok } =
-await supabaseClient
-.from("produk")
-.update({
-stok: stokBaru
-})
-.eq("id", p.id);
-
-if(errorStok){
-
-if(transaksi && transaksi[0]){
-await supabaseClient
-.from("penjualan")
-.delete()
-.eq("id", transaksi[0].id);
-}
-
-alert("Gagal mengurangi stok: " + errorStok.message);
-return;
-}
-
-produk[index].stok = stokBaru;
-
-alert(
-"Penjualan berhasil disimpan!\n\n" +
-p.nama + "\n" +
-"Terjual: " + jumlah + "\n" +
-"Total: Rp " + total.toLocaleString("id-ID") + "\n" +
-"Sisa stok: " + stokBaru
-);
-
-document.getElementById("jumlahJual").value = 1;
-
-isiPilihanProduk();
-
-tampilkanRiwayatPenjualan();
+  await isiPilihanProduk();
 
 }
 function kembaliDariStok(){
@@ -1300,32 +1347,54 @@ alert("Produk berhasil dihapus.");
 }
 async function ambilProdukDariSupabase(){
 
-const { data, error } = await supabaseClient
-.from("produk")
-.select("*")
-.order("id", { ascending: true });
+  const { data: owner, error: ownerError } =
+    await supabaseClient.rpc("is_owner");
 
-if(error){
-alert("Gagal mengambil produk: " + error.message);
-return;
-}
+  if(ownerError){
+    alert("Gagal memeriksa hak akses: " + ownerError.message);
+    return;
+  }
 
-produk = data || [];
+  // =========================
+  // OWNER
+  // =========================
+  if(owner === true){
 
-tampilkanProduk();
-tampilkanStok();
+    const { data, error } = await supabaseClient
+      .from("produk")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if(error){
+      alert("Gagal mengambil produk: " + error.message);
+      return;
+    }
+
+    produk = data || [];
+
+    tampilkanProduk();
+    tampilkanStok();
+
+    return;
+  }
+
+  // =========================
+  // PENJAGA
+  // =========================
+  const { data, error } =
+    await supabaseClient.rpc("ambil_produk_untuk_penjualan");
+
+  if(error){
+    alert("Gagal mengambil daftar produk: " + error.message);
+    return;
+  }
+
+  produk = data || [];
 
 }
 ambilProdukDariSupabase();
 </script>
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/Royal-Ubi/service-worker.js")
-      .then(() => console.log("Service Worker aktif"))
-      .catch(err => console.error("Service Worker gagal:", err));
-  });
-}
-</script>
+
 </body>
 </html>
+ 
